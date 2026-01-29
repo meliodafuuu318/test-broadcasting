@@ -3,7 +3,9 @@
 namespace App\Events;
 
 use App\Models\Message;
-use Illuminate\Broadcasting\Channel;
+use App\Models\Channel;
+use Illuminate\Broadcasting\Channel as BroadcastChannel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -22,19 +24,31 @@ class MessageSent implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new Channel('chat');
+        $channel = $this->message->channel;
+
+        if (!$channel) {
+            // Legacy support for old messages without channels (broadcast to public chat)
+            return new BroadcastChannel('chat');
+        }
+
+        // Public channels - anyone can listen
+        if ($channel->isPublic()) {
+            return new BroadcastChannel("channel.{$channel->id}");
+        }
+
+        // Private/Direct channels - only members can listen
+        return new PrivateChannel("channel.{$channel->id}");
     }
 
-    public function broadcastAs(): string
+    public function broadcastAs()
     {
-        // article.stored, article.updated, article.deleted
-        return 'message.sent' . $this->action;
+        return 'message.sent';
     }
 
     public function broadcastWith()
     {
         return [
-            'message' => 'An message has been ' . $this->action . '.',
+            'message' => $this->message->load('user', 'channel'),
         ];
     }
 }
