@@ -12,114 +12,71 @@
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <!-- Header -->
-            <div class="bg-blue-600 text-white px-6 py-4">
-                <h1 class="text-2xl font-bold">💬 Laravel Chat</h1>
-                <p class="text-blue-100 text-sm">Real-time messaging with Pusher</p>
-            </div>
-
-            <!-- Username Input (if not set) -->
-            <div id="username-section" class="p-6 border-b">
-                <label class="block text-gray-700 font-semibold mb-2">Enter your name to start chatting:</label>
-                <div class="flex gap-2">
-                    <input 
-                        type="text" 
-                        id="username-input" 
-                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Your name..."
-                        maxlength="255"
-                    >
-                    <button 
-                        onclick="setUsername()" 
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    >
-                        Join Chat
-                    </button>
+            <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold">💬 Laravel Chat</h1>
+                    <p class="text-blue-100 text-sm">Real-time messaging with Pusher</p>
                 </div>
-            </div>
-
-            <!-- Chat Section (hidden until username is set) -->
-            <div id="chat-section" class="hidden">
-                <!-- Messages Container -->
-                <div id="messages" class="h-96 overflow-y-auto p-6 space-y-4 bg-gray-50">
-                    @foreach($messages as $msg)
-                    <div class="message flex items-start space-x-2">
-                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
-                            {{ strtoupper(substr($msg->user_name, 0, 1)) }}
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex items-baseline gap-2">
-                                <span class="font-semibold text-gray-800">{{ $msg->user_name }}</span>
-                                <span class="text-xs text-gray-500">{{ $msg->created_at->format('g:i A') }}</span>
-                            </div>
-                            <p class="text-gray-700 break-words">{{ $msg->message }}</p>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-
-                <!-- Message Input -->
-                <div class="p-6 bg-white border-t">
-                    <form id="message-form" class="flex gap-2">
-                        <input 
-                            type="text" 
-                            id="message-input" 
-                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Type your message..."
-                            maxlength="1000"
-                            required
-                        >
-                        <button 
-                            type="submit" 
-                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
-                            id="send-button"
-                        >
-                            Send
+                <div class="flex items-center gap-4">
+                    <span class="text-sm">{{ auth()->user()->name }}</span>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="text-sm bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded">
+                            Logout
                         </button>
                     </form>
-                    <div class="mt-2 text-sm text-gray-600">
-                        Chatting as: <span class="font-semibold" id="current-username"></span>
-                        <button onclick="changeUsername()" class="text-blue-600 hover:underline ml-2">Change</button>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div id="messages" class="h-96 overflow-y-auto p-6 space-y-4 bg-gray-50">
+                @foreach($messages as $msg)
+                <div class="message flex items-start space-x-2 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse' : '' }}">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full {{ $msg->user_id === auth()->id() ? 'bg-green-500' : 'bg-blue-500' }} flex items-center justify-center text-white font-semibold text-sm">
+                        {{ strtoupper(substr($msg->user->name, 0, 1)) }}
+                    </div>
+                    <div class="flex-1 {{ $msg->user_id === auth()->id() ? 'text-right' : '' }}">
+                        <div class="flex items-baseline gap-2 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse' : '' }}">
+                            <span class="font-semibold text-gray-800">{{ $msg->user->name }}</span>
+                            <span class="text-xs text-gray-500">{{ $msg->created_at->format('g:i A') }}</span>
+                        </div>
+                        <div class="inline-block mt-1">
+                            <p class="px-4 py-2 rounded-lg {{ $msg->user_id === auth()->id() ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800' }} break-words">
+                                {{ $msg->message }}
+                            </p>
+                        </div>
                     </div>
                 </div>
+                @endforeach
+            </div>
+
+            <!-- Message Input -->
+            <div class="p-6 bg-white border-t">
+                <form id="message-form" class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="message-input" 
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Type your message..."
+                        maxlength="1000"
+                        required
+                    >
+                    <button 
+                        type="submit" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+                        id="send-button"
+                    >
+                        Send
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 
     <script>
-        let username = localStorage.getItem('chat_username') || '';
+        const currentUserId = {{ auth()->id() }};
+        const currentUserName = "{{ auth()->user()->name }}";
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-        // Initialize
-        if (username) {
-            showChatSection();
-        }
-
-        function setUsername() {
-            const input = document.getElementById('username-input');
-            const name = input.value.trim();
-            
-            if (name) {
-                username = name;
-                localStorage.setItem('chat_username', username);
-                showChatSection();
-            }
-        }
-
-        function changeUsername() {
-            username = '';
-            localStorage.removeItem('chat_username');
-            document.getElementById('username-section').classList.remove('hidden');
-            document.getElementById('chat-section').classList.add('hidden');
-            document.getElementById('username-input').value = '';
-        }
-
-        function showChatSection() {
-            document.getElementById('username-section').classList.add('hidden');
-            document.getElementById('chat-section').classList.remove('hidden');
-            document.getElementById('current-username').textContent = username;
-            document.getElementById('message-input').focus();
-            scrollToBottom();
-        }
 
         // Pusher Configuration
         const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
@@ -154,7 +111,6 @@
                         'Accept': 'application/json',
                     },
                     body: JSON.stringify({
-                        user_name: username,
                         message: message
                     })
                 });
@@ -175,35 +131,36 @@
             }
         });
 
-        // Enter key on username input
-        document.getElementById('username-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                setUsername();
-            }
-        });
-
         function addMessage(message) {
             const messagesContainer = document.getElementById('messages');
             
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'message flex items-start space-x-2';
+            const isOwnMessage = message.user_id === currentUserId;
+            messageDiv.className = `message flex items-start space-x-2 ${isOwnMessage ? 'flex-row-reverse' : ''}`;
             
-            const initial = message.user_name.charAt(0).toUpperCase();
+            const initial = message.user.name.charAt(0).toUpperCase();
             const time = new Date(message.created_at).toLocaleTimeString('en-US', { 
                 hour: 'numeric', 
                 minute: '2-digit'
             });
             
+            const bgColor = isOwnMessage ? 'bg-green-500' : 'bg-blue-500';
+            const bubbleColor = isOwnMessage ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800';
+            const textAlign = isOwnMessage ? 'text-right' : '';
+            const flexDirection = isOwnMessage ? 'flex-row-reverse' : '';
+            
             messageDiv.innerHTML = `
-                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                <div class="flex-shrink-0 w-8 h-8 rounded-full ${bgColor} flex items-center justify-center text-white font-semibold text-sm">
                     ${initial}
                 </div>
-                <div class="flex-1">
-                    <div class="flex items-baseline gap-2">
-                        <span class="font-semibold text-gray-800">${escapeHtml(message.user_name)}</span>
+                <div class="flex-1 ${textAlign}">
+                    <div class="flex items-baseline gap-2 ${flexDirection}">
+                        <span class="font-semibold text-gray-800">${escapeHtml(message.user.name)}</span>
                         <span class="text-xs text-gray-500">${time}</span>
                     </div>
-                    <p class="text-gray-700 break-words">${escapeHtml(message.message)}</p>
+                    <div class="inline-block mt-1">
+                        <p class="px-4 py-2 rounded-lg ${bubbleColor} break-words">${escapeHtml(message.message)}</p>
+                    </div>
                 </div>
             `;
             
@@ -221,6 +178,9 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // Scroll to bottom on page load
+        scrollToBottom();
     </script>   
 </body>
 </html>

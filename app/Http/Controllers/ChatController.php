@@ -8,23 +8,30 @@ use Illuminate\Http\Request;
 
 class ChatController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $messages = Message::latest()->take(50)->get()->reverse()->values();
+        $messages = Message::with('user')->latest()->take(50)->get()->reverse()->values();
         return view('chat', compact('messages'));
     }
 
     public function sendMessage(Request $request)
     {
         $request->validate([
-            'user_name' => 'required|string|max:255',
             'message' => 'required|string|max:1000',
         ]);
 
         $message = Message::create([
-            'user_name' => $request->user_name,
+            'user_id' => auth()->id(),
             'message' => $request->message,
         ]);
+
+        // Load the user relationship
+        $message->load('user');
 
         broadcast(new MessageSent($message))->toOthers();
 
@@ -36,7 +43,7 @@ class ChatController extends Controller
 
     public function getMessages()
     {
-        $messages = Message::latest()->take(50)->get()->reverse()->values();
+        $messages = Message::with('user')->latest()->take(50)->get()->reverse()->values();
         return response()->json($messages);
     }
 }
