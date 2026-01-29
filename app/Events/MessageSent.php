@@ -25,8 +25,16 @@ class MessageSent implements ShouldBroadcast
         return new Channel('chat');
     }
 
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
-        return 'message.sent';
+        // article.stored, article.updated, article.deleted
+        return 'message.sent' . $this->action;
+    }
+
+    public function broadcastWith()
+    {
+        return [
+            'message' => 'An message has been ' . $this->action . '.',
+        ];
     }
 }

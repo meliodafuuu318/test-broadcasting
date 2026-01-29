@@ -8,11 +8,6 @@ use Illuminate\Http\Request;
 
 class ChatController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     public function index()
     {
         $messages = Message::with('user')->latest()->take(50)->get()->reverse()->values();

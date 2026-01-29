@@ -4,183 +4,165 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Laravel Chat App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <title>Chat App</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-            <!-- Header -->
-            <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
                 <div>
-                    <h1 class="text-2xl font-bold">💬 Laravel Chat</h1>
-                    <p class="text-blue-100 text-sm">Real-time messaging with Pusher</p>
+                    <h1 class="text-2xl font-bold text-gray-900">Chat Room</h1>
+                    <p class="text-sm text-gray-600">Logged in as {{ auth()->user()->name }}</p>
                 </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-sm">{{ auth()->user()->name }}</span>
-                    <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div class="flex-1 max-w-4xl w-full mx-auto p-4">
+            <div class="bg-white rounded-lg shadow-lg h-[calc(100vh-250px)] flex flex-col">
+                <!-- Messages Area -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    @foreach($messages as $message)
+                        <div class="message flex {{ $message->user_id === auth()->id() ? 'justify-end' : 'justify-start' }}">
+                            <div class="max-w-xs lg:max-w-md">
+                                <div class="flex items-center gap-2 mb-1 {{ $message->user_id === auth()->id() ? 'flex-row-reverse' : '' }}">
+                                    <span class="text-sm font-semibold text-gray-700">{{ $message->user->name }}</span>
+                                    <span class="text-xs text-gray-500">{{ $message->created_at->format('h:i A') }}</span>
+                                </div>
+                                <div class="px-4 py-2 rounded-lg {{ $message->user_id === auth()->id() ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-900' }}">
+                                    {{ $message->message }}
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <!-- Message Input -->
+                <div class="border-t p-4">
+                    <form id="message-form" class="flex gap-2">
                         @csrf
-                        <button type="submit" class="text-sm bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded">
-                            Logout
+                        <input 
+                            type="text" 
+                            id="message-input"
+                            name="message"
+                            placeholder="Type your message..." 
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                            maxlength="1000"
+                        >
+                        <button 
+                            type="submit"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition"
+                        >
+                            Send
                         </button>
                     </form>
                 </div>
-            </div>
-
-            <!-- Messages Container -->
-            <div id="messages" class="h-96 overflow-y-auto p-6 space-y-4 bg-gray-50">
-                @foreach($messages as $msg)
-                <div class="message flex items-start space-x-2 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse' : '' }}">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full {{ $msg->user_id === auth()->id() ? 'bg-green-500' : 'bg-blue-500' }} flex items-center justify-center text-white font-semibold text-sm">
-                        {{ strtoupper(substr($msg->user->name, 0, 1)) }}
-                    </div>
-                    <div class="flex-1 {{ $msg->user_id === auth()->id() ? 'text-right' : '' }}">
-                        <div class="flex items-baseline gap-2 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse' : '' }}">
-                            <span class="font-semibold text-gray-800">{{ $msg->user->name }}</span>
-                            <span class="text-xs text-gray-500">{{ $msg->created_at->format('g:i A') }}</span>
-                        </div>
-                        <div class="inline-block mt-1">
-                            <p class="px-4 py-2 rounded-lg {{ $msg->user_id === auth()->id() ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800' }} break-words">
-                                {{ $msg->message }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-
-            <!-- Message Input -->
-            <div class="p-6 bg-white border-t">
-                <form id="message-form" class="flex gap-2">
-                    <input 
-                        type="text" 
-                        id="message-input" 
-                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Type your message..."
-                        maxlength="1000"
-                        required
-                    >
-                    <button 
-                        type="submit" 
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
-                        id="send-button"
-                    >
-                        Send
-                    </button>
-                </form>
             </div>
         </div>
     </div>
 
     <script>
+        // Auto-scroll to bottom function
+        function scrollToBottom() {
+            const container = document.getElementById('messages-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Initial scroll to bottom
+        scrollToBottom();
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         const currentUserId = {{ auth()->id() }};
         const currentUserName = "{{ auth()->user()->name }}";
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-        // Pusher Configuration
-        const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
-            cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
-            encrypted: true
-        });
-
-        const channel = pusher.subscribe('chat');
-        
-        channel.bind('message.sent', function(data) {
-            addMessage(data.message);
-        });
 
         // Handle form submission
-        document.getElementById('message-form').addEventListener('submit', async function(e) {
+        document.getElementById('message-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const messageInput = document.getElementById('message-input');
-            const message = messageInput.value.trim();
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
             
             if (!message) return;
 
-            const sendButton = document.getElementById('send-button');
-            sendButton.disabled = true;
-
             try {
-                const response = await fetch('/send-message', {
+                const response = await fetch('{{ route('send.message') }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify({
-                        message: message
-                    })
+                    body: JSON.stringify({ message })
                 });
 
-                const data = await response.json();
-                
-                if (data.success) {
+                if (response.ok) {
+                    const data = await response.json();
                     // Add our own message to the chat
-                    addMessage(data.message);
-                    messageInput.value = '';
+                    addMessage(data.message, true);
+                    input.value = '';
+                    scrollToBottom();
                 }
             } catch (error) {
                 console.error('Error sending message:', error);
                 alert('Failed to send message. Please try again.');
-            } finally {
-                sendButton.disabled = false;
-                messageInput.focus();
             }
         });
 
-        function addMessage(message) {
-            const messagesContainer = document.getElementById('messages');
-            
+        // Function to add a message to the chat
+        function addMessage(message, isOwn = false) {
+            const container = document.getElementById('messages-container');
             const messageDiv = document.createElement('div');
-            const isOwnMessage = message.user_id === currentUserId;
-            messageDiv.className = `message flex items-start space-x-2 ${isOwnMessage ? 'flex-row-reverse' : ''}`;
+            messageDiv.className = `message flex ${isOwn ? 'justify-end' : 'justify-start'}`;
             
-            const initial = message.user.name.charAt(0).toUpperCase();
-            const time = new Date(message.created_at).toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
-                minute: '2-digit'
-            });
-            
-            const bgColor = isOwnMessage ? 'bg-green-500' : 'bg-blue-500';
-            const bubbleColor = isOwnMessage ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800';
-            const textAlign = isOwnMessage ? 'text-right' : '';
-            const flexDirection = isOwnMessage ? 'flex-row-reverse' : '';
+            const date = new Date(message.created_at);
+            const timeString = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
             
             messageDiv.innerHTML = `
-                <div class="flex-shrink-0 w-8 h-8 rounded-full ${bgColor} flex items-center justify-center text-white font-semibold text-sm">
-                    ${initial}
-                </div>
-                <div class="flex-1 ${textAlign}">
-                    <div class="flex items-baseline gap-2 ${flexDirection}">
-                        <span class="font-semibold text-gray-800">${escapeHtml(message.user.name)}</span>
-                        <span class="text-xs text-gray-500">${time}</span>
+                <div class="max-w-xs lg:max-w-md">
+                    <div class="flex items-center gap-2 mb-1 ${isOwn ? 'flex-row-reverse' : ''}">
+                        <span class="text-sm font-semibold text-gray-700">${message.user.name}</span>
+                        <span class="text-xs text-gray-500">${timeString}</span>
                     </div>
-                    <div class="inline-block mt-1">
-                        <p class="px-4 py-2 rounded-lg ${bubbleColor} break-words">${escapeHtml(message.message)}</p>
+                    <div class="px-4 py-2 rounded-lg ${isOwn ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-900'}">
+                        ${escapeHtml(message.message)}
                     </div>
                 </div>
             `;
             
-            messagesContainer.appendChild(messageDiv);
-            scrollToBottom();
+            container.appendChild(messageDiv);
         }
 
-        function scrollToBottom() {
-            const messagesContainer = document.getElementById('messages');
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
+        // HTML escape function to prevent XSS
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // Scroll to bottom on page load
-        scrollToBottom();
-    </script>   
+        // Listen for new messages via Laravel Echo
+        if (window.Echo) {
+            window.Echo.channel('chat')
+                .listen('.message.sent', (e) => {
+                    console.log('New message received:', e);
+                    // Only add messages from other users (our own messages are added immediately)
+                    if (e.message.user_id !== currentUserId) {
+                        addMessage(e.message, false);
+                        scrollToBottom();
+                    }
+                });
+        } else {
+            console.error('Laravel Echo is not initialized');
+        }
+    </script>
 </body>
 </html>
